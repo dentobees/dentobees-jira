@@ -23,7 +23,7 @@
 
 ## 1. Project Overview
 
-**TaskFlow** is a developer-first, Jira-inspired task management web application built for software teams. It allows teams to create projects, manage issues across customizable Kanban boards, plan sprints, and collaborate in real time — all inside a clean, fast, and modern interface.
+**Dentobees jira** is a developer-first, Jira-inspired task management web application built for software teams. It allows teams to create projects, manage issues across customizable Kanban boards, plan sprints, and collaborate in real time — all inside a clean, fast, and modern interface.
 
 ### Core Goals
 
