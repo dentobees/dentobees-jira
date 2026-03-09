@@ -164,7 +164,13 @@ export default function BoardPage() {
           </div>
         </div>
 
-        <BoardFilters filters={filters} onFilterChange={setFilters} />
+        <BoardFilters
+          filters={filters}
+          onFilterChange={setFilters}
+          members={(project.members as unknown as { _id: string; name: string; email: string; image?: string }[]).filter(
+            (m) => typeof m === "object" && m !== null && "_id" in m
+          )}
+        />
 
         <div className="flex-1 min-h-[500px] flex flex-col">
           <KanbanBoard

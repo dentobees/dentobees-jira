@@ -6,7 +6,7 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { X, MessageSquare, Activity as ActivityIcon } from "lucide-react";
+import { X, MessageSquare, Activity as ActivityIcon, ChevronDown, Check, UserPlus } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type {
   IIssue,
@@ -121,11 +121,14 @@ export function IssueDetailModal({
 }: IssueDetailModalProps) {
   const [issue, setIssue] = useState<IIssue | null>(null);
   const [project, setProject] = useState<IProject | null>(null);
+  const [projectMembers, setProjectMembers] = useState<IUser[]>([]);
   const [comments, setComments] = useState<IComment[]>([]);
   const [activities, setActivities] = useState<IActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const [commentBody, setCommentBody] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);
+  const assigneeDropdownRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const fetchIssue = useCallback(async () => {
@@ -141,6 +144,10 @@ export function IssueDetailModal({
           if (pRes.ok) {
             const pData = await pRes.json();
             setProject(pData);
+            const members = (pData.members ?? []).filter(
+              (m: unknown): m is IUser => typeof m === "object" && m !== null && "_id" in m
+            );
+            setProjectMembers(members);
           }
         }
       }
@@ -174,10 +181,23 @@ export function IssueDetailModal({
     } else {
       setIssue(null);
       setProject(null);
+      setProjectMembers([]);
       setComments([]);
       setActivities([]);
+      setAssigneeDropdownOpen(false);
     }
   }, [issueId, fetchIssue, fetchComments, fetchActivity]);
+
+  // Close assignee dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(e.target as Node)) {
+        setAssigneeDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -505,26 +525,74 @@ export function IssueDetailModal({
                   </div>
                 </div>
 
+                {/* Assignees — interactive dropdown */}
                 <div>
-                  <div className="text-xs text-muted-foreground mb-0.5">
-                    Assignees
-                  </div>
-                  <div className="flex flex-wrap gap-1 py-0.5">
-                    {assignees.length > 0 ? (
-                      assignees.map((a) =>
-                        typeof a === "string" ? (
-                          <span
-                            key={a}
-                            className="text-xs text-muted-foreground"
-                          >
-                            {a}
-                          </span>
+                  <div className="text-xs text-muted-foreground mb-1">Assignees</div>
+                  <div ref={assigneeDropdownRef} className="relative">
+                    {/* Trigger */}
+                    <button
+                      type="button"
+                      onClick={() => setAssigneeDropdownOpen((o) => !o)}
+                      className="w-full flex items-center gap-1.5 px-2 py-1.5 -mx-2 rounded-[3px] hover:bg-secondary transition-colors text-left"
+                    >
+                      {assignees.length > 0 ? (
+                        <div className="flex items-center gap-1.5 flex-1 flex-wrap">
+                          {assignees.map((a) => {
+                            if (typeof a === "string") return null;
+                            return (
+                              <span key={a._id} className="flex items-center gap-1 text-sm text-foreground">
+                                <UserAvatar user={a} />
+                                <span className="truncate max-w-[80px]">{a.name.split(" ")[0]}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-sm text-muted-foreground flex-1">
+                          <UserPlus className="w-3.5 h-3.5" />
+                          Unassigned
+                        </span>
+                      )}
+                      <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform", assigneeDropdownOpen && "rotate-180")} />
+                    </button>
+
+                    {/* Dropdown */}
+                    {assigneeDropdownOpen && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border rounded-[3px] shadow-lg max-h-48 overflow-y-auto">
+                        {projectMembers.length === 0 ? (
+                          <div className="px-3 py-3 text-xs text-muted-foreground text-center">
+                            No members in this project.<br />Add members in Project Settings.
+                          </div>
                         ) : (
-                          <UserAvatar key={a._id} user={a} />
-                        )
-                      )
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
+                          projectMembers.map((member) => {
+                            const currentIds = assignees
+                              .map((a) => typeof a === "string" ? a : a._id)
+                              .filter(Boolean);
+                            const isSelected = currentIds.includes(member._id);
+                            return (
+                              <button
+                                key={member._id}
+                                type="button"
+                                onClick={() => {
+                                  const newIds = isSelected
+                                    ? currentIds.filter((id) => id !== member._id)
+                                    : [...currentIds, member._id];
+                                  patchIssue({ assignees: newIds });
+                                  setAssigneeDropdownOpen(false);
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-secondary transition-colors"
+                              >
+                                <UserAvatar user={member} />
+                                <div className="flex-1 text-left min-w-0">
+                                  <p className="text-foreground truncate">{member.name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                                </div>
+                                {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
