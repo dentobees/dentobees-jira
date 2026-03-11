@@ -16,6 +16,7 @@ const issueSchema = new Schema(
     labels: [{ type: Schema.Types.ObjectId, ref: "Label" }],
     parent: { type: Schema.Types.ObjectId, ref: "Issue", default: null },
     children: [{ type: Schema.Types.ObjectId, ref: "Issue" }],
+    crmTicketId: { type: Schema.Types.ObjectId, default: null },
     attachments: [
       {
         filename: String,
@@ -33,6 +34,7 @@ const issueSchema = new Schema(
 issueSchema.index({ project: 1, status: 1 });
 issueSchema.index({ project: 1, sprint: 1 });
 issueSchema.index({ assignees: 1 });
+issueSchema.index({ crmTicketId: 1 });
 issueSchema.index({ key: 1 }, { unique: true });
 
 export const Issue = models.Issue || mongoose.model("Issue", issueSchema);

@@ -9,6 +9,7 @@ import { Sprint } from "@/models/Sprint";
 import "@/models/User";  // register for reporter/assignees populate
 import "@/models/Label"; // register for labels populate
 import mongoose from "mongoose";
+import { syncCrmDevelopmentTicketsToBacklog } from "@/lib/integrations/crmTicketsToBacklog";
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,6 +28,8 @@ export async function GET(req: NextRequest) {
     }
 
     await connectDB();
+
+    await syncCrmDevelopmentTicketsToBacklog({ projectId });
 
     const filter: Record<string, unknown> = { project: projectId };
     const status = searchParams.get("status");
