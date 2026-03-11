@@ -9,7 +9,7 @@ const userSchema = new Schema(
     role: { type: String, enum: ["admin", "member", "viewer"], default: "member" },
     workspaces: [{ type: Schema.Types.ObjectId, ref: "Workspace" }],
   },
-  { timestamps: true }
+  { timestamps: true, collection: "users-jira" }
 );
 
 export const User = models.User || mongoose.model("User", userSchema);

@@ -13,7 +13,7 @@ const commentSchema = new Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true, collection: "comments-jira" }
 );
 
 commentSchema.index({ issue: 1, createdAt: -1 });

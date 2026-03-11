@@ -27,7 +27,7 @@ const issueSchema = new Schema(
     dueDate: { type: Date, default: null },
     order: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true, collection: "issues-jira" }
 );
 
 issueSchema.index({ project: 1, status: 1 });

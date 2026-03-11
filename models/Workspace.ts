@@ -13,7 +13,7 @@ const workspaceSchema = new Schema(
     ],
     projects: [{ type: Schema.Types.ObjectId, ref: "Project" }],
   },
-  { timestamps: true }
+  { timestamps: true, collection: "workspaces-jira" }
 );
 
 export const Workspace = models.Workspace || mongoose.model("Workspace", workspaceSchema);

@@ -19,7 +19,7 @@ const projectSchema = new Schema(
     defaultColumn: { type: String },
     issueCounter: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true, collection: "projects-jira" }
 );
 
 projectSchema.index({ workspace: 1 });

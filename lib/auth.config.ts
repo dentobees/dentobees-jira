@@ -6,6 +6,7 @@ import Credentials from "next-auth/providers/credentials";
 // Edge-compatible config — no Node.js-only modules (no bcrypt, no mongoose).
 // Used only by middleware for session checking.
 export const authConfig: NextAuthConfig = {
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,

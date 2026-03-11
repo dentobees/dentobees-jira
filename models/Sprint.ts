@@ -10,7 +10,7 @@ const sprintSchema = new Schema(
     endDate: { type: Date },
     issues: [{ type: Schema.Types.ObjectId, ref: "Issue" }],
   },
-  { timestamps: true }
+  { timestamps: true, collection: "sprints-jira" }
 );
 
 sprintSchema.index({ project: 1, status: 1 });
