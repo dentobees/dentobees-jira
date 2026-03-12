@@ -123,6 +123,7 @@ export function CreateIssueModal({ projectId, onCreated }: CreateIssueModalProps
   const [loading, setLoading] = useState(false);
   const [sprints, setSprints] = useState<{ _id: string; name: string }[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [form, setForm] = useState({
     title: "",
     type: "task" as IssueType,
@@ -172,6 +173,25 @@ export function CreateIssueModal({ projectId, onCreated }: CreateIssueModalProps
 
     setLoading(true);
     try {
+      let uploadedAttachments: { filename: string; url: string; size: number }[] = [];
+
+      if (attachments.length > 0) {
+        const fd = new FormData();
+        attachments.forEach((file) => fd.append("files", file));
+
+        const uploadRes = await fetch("/api/uploads", {
+          method: "POST",
+          body: fd,
+        });
+
+        if (!uploadRes.ok) {
+          const err = await uploadRes.json().catch(() => ({}));
+          throw new Error(err.error ?? "Failed to upload attachments");
+        }
+
+        uploadedAttachments = await uploadRes.json();
+      }
+
       const res = await fetch("/api/issues", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -185,6 +205,7 @@ export function CreateIssueModal({ projectId, onCreated }: CreateIssueModalProps
           description: form.description.trim() || undefined,
           sprint: form.sprint || null,
           dueDate: form.dueDate || null,
+          attachments: uploadedAttachments,
         }),
       });
 
@@ -195,6 +216,7 @@ export function CreateIssueModal({ projectId, onCreated }: CreateIssueModalProps
 
       toast.success("Issue created");
       setForm({ title: "", type: "task", priority: "medium", assignees: [], storyPoints: "", description: "", sprint: "", dueDate: "" });
+      setAttachments([]);
       setCreateIssueOpen(false);
       onCreated();
     } catch (err) {
@@ -334,6 +356,30 @@ export function CreateIssueModal({ projectId, onCreated }: CreateIssueModalProps
               rows={3}
               className="w-full px-3 py-2 text-sm border border-input rounded-[3px] bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             />
+          </div>
+
+          {/* Attachments */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">Attachments</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                const files = e.target.files ? Array.from(e.target.files) : [];
+                setAttachments(files);
+              }}
+              className="block w-full text-sm text-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-[3px] file:border-0 file:bg-secondary file:text-foreground hover:file:bg-secondary/80 cursor-pointer"
+            />
+            {attachments.length > 0 && (
+              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                {attachments.map((file) => (
+                  <li key={file.name} className="truncate">
+                    {file.name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2 border-t border-border">

@@ -74,7 +74,20 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, type, priority, projectId, assignees, labels, sprint, storyPoints, dueDate, parentId } = body;
+    const {
+      title,
+      description,
+      type,
+      priority,
+      projectId,
+      assignees,
+      labels,
+      sprint,
+      storyPoints,
+      dueDate,
+      parentId,
+      attachments,
+    } = body;
     if (!title || !projectId) {
       return NextResponse.json({ error: "title and projectId are required" }, { status: 400 });
     }
@@ -122,6 +135,7 @@ export async function POST(req: NextRequest) {
       storyPoints: storyPoints ?? 0,
       dueDate: dueDate ? new Date(dueDate) : null,
       parent: parentId || null,
+      attachments: Array.isArray(attachments) ? attachments : [],
     });
 
     if (parentId && mongoose.isValidObjectId(parentId)) {

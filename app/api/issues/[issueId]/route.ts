@@ -87,7 +87,20 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { title, description, type, status, priority, assignees, labels, sprint, storyPoints, dueDate, order } = body;
+    const {
+      title,
+      description,
+      type,
+      status,
+      priority,
+      assignees,
+      labels,
+      sprint,
+      storyPoints,
+      dueDate,
+      order,
+      attachments,
+    } = body;
 
     if (status !== undefined && status !== issue.status) {
       await Activity.create({
@@ -144,6 +157,7 @@ export async function PATCH(
     if (storyPoints !== undefined) issue.storyPoints = storyPoints;
     if (dueDate !== undefined) issue.dueDate = dueDate ? new Date(dueDate) : null;
     if (order !== undefined) issue.order = order;
+    if (attachments !== undefined) issue.attachments = attachments;
 
     await issue.save();
 

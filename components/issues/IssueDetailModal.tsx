@@ -127,6 +127,7 @@ export function IssueDetailModal({
   const [loading, setLoading] = useState(false);
   const [commentBody, setCommentBody] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
   const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);
   const assigneeDropdownRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -211,6 +212,38 @@ export function IssueDetailModal({
     if (e.target === overlayRef.current) onClose();
   };
 
+  const handleAddAttachments = async (files: FileList | null) => {
+    if (!issueId || !files || files.length === 0 || !issue) return;
+    setUploadingAttachments(true);
+    try {
+      const fd = new FormData();
+      Array.from(files).forEach((file) => fd.append("files", file));
+
+      const uploadRes = await fetch("/api/uploads", {
+        method: "POST",
+        body: fd,
+      });
+
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({}));
+        throw new Error(err.error ?? "Failed to upload attachments");
+      }
+
+      const uploaded: { filename: string; url: string; size: number }[] = await uploadRes.json();
+      const existing = Array.isArray(issue.attachments) ? issue.attachments : [];
+
+      await patchIssue({
+        attachments: [...existing, ...uploaded],
+      });
+      await fetchIssue();
+      toast.success("Attachments added");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to add attachments");
+    } finally {
+      setUploadingAttachments(false);
+    }
+  };
+
   const patchIssue = async (updates: Record<string, unknown>) => {
     if (!issueId) return;
     try {
@@ -256,6 +289,7 @@ export function IssueDetailModal({
   const columns: BoardColumn[] = project?.columns ?? [];
   const reporter = issue?.reporter as IUser | undefined;
   const assignees = (issue?.assignees ?? []) as (string | IUser)[];
+  const attachments = issue?.attachments ?? [];
 
   return (
     <div
@@ -333,6 +367,64 @@ export function IssueDetailModal({
                       />
                     )}
                   />
+                </div>
+
+                {/* Attachments */}
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium text-foreground mb-2">
+                    Attachments ({attachments.length})
+                  </h3>
+                  {attachments.length > 0 ? (
+                    <ul className="space-y-2 text-sm">
+                      {attachments.map((att) => (
+                        <li key={att.url} className="flex items-center gap-3">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={att.url}
+                            alt={att.filename}
+                            className="w-16 h-16 rounded-[3px] border border-border object-cover bg-secondary"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <a
+                              href={att.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline truncate block"
+                              title={att.filename}
+                            >
+                              {att.filename}
+                            </a>
+                            <span className="text-xs text-muted-foreground">
+                              {Math.round(att.size / 1024)} KB
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No attachments yet.</p>
+                  )}
+                  <div className="mt-2">
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">
+                      Add images
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        void handleAddAttachments(files);
+                        // allow selecting the same file again later
+                        e.target.value = "";
+                      }}
+                      disabled={uploadingAttachments}
+                      className="block w-full text-xs text-foreground file:mr-3 file:py-1 file:px-3 file:rounded-[3px] file:border-0 file:bg-secondary file:text-foreground hover:file:bg-secondary/80 cursor-pointer disabled:opacity-50"
+                    />
+                    {uploadingAttachments && (
+                      <p className="mt-1 text-xs text-muted-foreground">Uploading attachments...</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Comments */}
